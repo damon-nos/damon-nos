@@ -10,7 +10,7 @@ env:
   ECR_REPOSITORY: damon-mgmt-kor-repo-1
   ECS_SERVICE: damon-web
   ECS_CLUSTER: damon-ssr-ecs-1
-  ECS_TASK_DEFINITION: damon-ssr-ecs-1
+  ECS_TASK_DEFINITION: damon-web-1.json
   CONTAINER_NAME: damon-web
                            
 
