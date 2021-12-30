@@ -6,14 +6,13 @@ on:
       - main
 
 env:
-  AWS_REGION: ap-northeast-2                   # set this to your preferred AWS region, e.g. us-west-1
-  ECR_REPOSITORY: damon-mgmt-kor-repo-1        # set this to your Amazon ECR repository name
-  ECS_SERVICE: damon-web                       # set this to your Amazon ECS service name
-  ECS_CLUSTER: damon-ssr-ecs-1                 # set this to your Amazon ECS cluster name
-  ECS_TASK_DEFINITION: damon-ssr-ecs-1         # set this to the path to your Amazon ECS task definition
-                                               # file, e.g. .aws/task-definition.json
-  CONTAINER_NAME: damon-web                    # set this to the name of the container in the
-                                               # containerDefinitions section of your task definition
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: damon-mgmt-kor-repo-1
+  ECS_SERVICE: damon-web
+  ECS_CLUSTER: damon-ssr-ecs-1
+  ECS_TASK_DEFINITION: damon-ssr-ecs-1
+  CONTAINER_NAME: damon-web
+                           
 
 jobs:
   deploy:
@@ -32,7 +31,7 @@ jobs:
       uses: aws-actions/configure-aws-credentials@v1
       with:
         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-        aws-region: ap-northeast-2
+        aws-region: ${{ env.AWS_REGION }}
 
     - name: Login to Amazon ECR
       id: login-ecr
