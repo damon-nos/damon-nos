@@ -1,0 +1,71 @@
+name: Deploy to Amazon ECS
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: damon-mgmt-kor-repo-1
+  ECS_SERVICE: damon-web
+  ECS_CLUSTER: damon-ssr-ecs-1
+  ECS_TASK_DEFINITION: damon-ssr-ecs-1
+  CONTAINER_NAME: damon-web
+                           
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest     
+    environment: dev
+    permissions:
+      packages: write
+      contents: read
+      id-token: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag damon-web:$(date +%s)      
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to ECS.
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ steps.build-image.outputs.image }}
+
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
